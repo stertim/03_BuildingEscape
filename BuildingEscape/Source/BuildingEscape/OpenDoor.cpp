@@ -2,6 +2,8 @@
 
 #include "OpenDoor.h"
 
+//To make autocomplete work...
+#include "GameFramework/Actor.h"
 
 // Sets default values for this component's properties
 UOpenDoor::UOpenDoor()
@@ -19,7 +21,14 @@ void UOpenDoor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
+	// Find owning Actor
+	AActor* Owner = GetOwner();
+
+	// Create a rotator
+	FRotator NewRotation = FRotator(0.0f, -10.0f, 0.0f);
+
+	// Set the door rotation
+	Owner->SetActorRotation(NewRotation);
 	
 }
 
