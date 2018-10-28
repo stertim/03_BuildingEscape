@@ -2,6 +2,13 @@
 
 #include "Grabber.h"
 
+//To make autocomplete work...
+#include "DrawDebugHelpers.h"
+#include "Engine/World.h"  // This is for GetWorld() intellisense
+#include "GameFramework/Actor.h"
+
+// An empty macro to remind us of output parameters...
+#define OUT
 
 // Sets default values for this component's properties
 UGrabber::UGrabber()
@@ -18,8 +25,7 @@ UGrabber::UGrabber()
 void UGrabber::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// ...
+	UE_LOG(LogTemp, Warning, TEXT("Grabber reporting for duty!"));
 	
 }
 
@@ -29,6 +35,32 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
+	// Get player view point this tick
+	FVector PlayerViewPointLocation;
+	FRotator PlayerViewPointRotation;
+	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(OUT PlayerViewPointLocation, OUT PlayerViewPointRotation);
+
+	// Log out the view point location and rotation to test
+	//UE_LOG(LogTemp, Warning, TEXT("Location: %s, Rotation: %s"), *PlayerViewPointLocation.ToString(), *PlayerViewPointRotation.ToString());
+
+	FVector LineTraceEnd = PlayerViewPointLocation + (PlayerViewPointRotation.Vector() * Reach);
+
+	// Draw a red trace in the world to visual
+	DrawDebugLine(
+		GetWorld(),
+		PlayerViewPointLocation,
+		LineTraceEnd,
+		FColor(255, 0, 0),
+		false,
+		0.0f,
+		0,
+		10.0f
+	);
+
+	// Ray-cast out to reach distance
+
+	// See what we hit
+
+
 }
 
