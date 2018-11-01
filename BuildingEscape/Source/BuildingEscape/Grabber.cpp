@@ -3,9 +3,9 @@
 #include "Grabber.h"
 
 //To make autocomplete work...
-#include "DrawDebugHelpers.h"
 #include "Engine/World.h"  // This is for GetWorld() intellisense
 #include "GameFramework/Actor.h"
+#include "Components/PrimitiveComponent.h"
 
 // An empty macro to remind us of output parameters...
 #define OUT
@@ -23,9 +23,44 @@ UGrabber::UGrabber()
 void UGrabber::BeginPlay()
 {
 	Super::BeginPlay();
-	UE_LOG(LogTemp, Warning, TEXT("Grabber reporting for duty!"));
+	FindPhysicsHandleComponent();
+	SetupInputComponent();
 
-	/// Look for attached Physics handle
+}
+
+void UGrabber::Grab()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Grab pressed"));
+
+	/// LINE TRACE and see if we reach any actors with physics body collision channel set
+	auto HitResult = GetFirstPhysicsBodyInReach();
+	auto ComponentToGrab = HitResult.GetComponent();
+	auto ActorHit = HitResult.GetActor();
+
+	/// If we hit something then attach a physics handle
+	if (ActorHit) {
+		// attach physics handle
+		// This constrains the rotation of the grabbed component...
+		PhysicsHandle->GrabComponentAtLocationWithRotation(ComponentToGrab, NAME_None, ComponentToGrab->GetOwner()->GetActorLocation(), ComponentToGrab->GetOwner()->GetActorRotation());
+
+		// This allows the grabbed item to freely rotate with physics...
+		//PhysicsHandle->GrabComponentAtLocation(ComponentToGrab, NAME_None, ComponentToGrab->GetOwner()->GetActorLocation());
+
+		// This is deprecated...
+		//PhysicsHandle->GrabComponent(ComponentToGrab, NAME_None, ComponentToGrab->GetOwner()->GetActorLocation(), true);
+	}
+}
+
+void UGrabber::Release()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Grab released"));
+	// release physics handle
+	PhysicsHandle->ReleaseComponent();
+}
+
+/// Look for attached Physics handle
+void UGrabber::FindPhysicsHandleComponent()
+{
 	PhysicsHandle = GetOwner()->FindComponentByClass<UPhysicsHandleComponent>();
 	if (PhysicsHandle) {
 		// Physics handle is found
@@ -33,8 +68,11 @@ void UGrabber::BeginPlay()
 	else {
 		UE_LOG(LogTemp, Error, TEXT("%s missing the physics handle component"), *GetOwner()->GetName());
 	}
+}
 
-	/// Look for UInputComponent (only attached at runtime)
+/// Look for UInputComponent (only attached at runtime)
+void UGrabber::SetupInputComponent()
+{
 	InputComponent = GetOwner()->FindComponentByClass<UInputComponent>();
 	if (InputComponent) {
 		/// Bind the input axis
@@ -44,17 +82,6 @@ void UGrabber::BeginPlay()
 	else {
 		UE_LOG(LogTemp, Error, TEXT("%s is missing the Input component"), *GetOwner()->GetName());
 	}
-	
-}
-
-void UGrabber::Grab()
-{
-	UE_LOG(LogTemp, Warning, TEXT("Grab pressed"));
-}
-
-void UGrabber::Release()
-{
-	UE_LOG(LogTemp, Warning, TEXT("Grab released"));
 }
 
 
@@ -68,18 +95,23 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 	FRotator PlayerViewPointRotation;
 	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(OUT PlayerViewPointLocation, OUT PlayerViewPointRotation);
 
-	/// Draw a red trace in the world to visual
 	FVector LineTraceEnd = PlayerViewPointLocation + (PlayerViewPointRotation.Vector() * Reach);
-	DrawDebugLine(
-		GetWorld(),
-		PlayerViewPointLocation,
-		LineTraceEnd,
-		FColor(255, 0, 0),
-		false,
-		0.0f,
-		0,
-		10.0f
-	);
+
+	// if the physics handle is attached
+	if (PhysicsHandle->GrabbedComponent) {
+		// move the object that we're holding
+		PhysicsHandle->SetTargetLocation(LineTraceEnd);
+	}
+}
+
+const FHitResult UGrabber::GetFirstPhysicsBodyInReach()
+{
+	/// Get player view point this tick
+	FVector PlayerViewPointLocation;
+	FRotator PlayerViewPointRotation;
+	GetWorld()->GetFirstPlayerController()->GetPlayerViewPoint(OUT PlayerViewPointLocation, OUT PlayerViewPointRotation);
+
+	FVector LineTraceEnd = PlayerViewPointLocation + (PlayerViewPointRotation.Vector() * Reach);
 
 	/// Setup query parameters
 	FCollisionQueryParams TraceParameters(FName(TEXT("")), false, GetOwner());
@@ -100,5 +132,7 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 	if (ActorHit) {
 		UE_LOG(LogTemp, Warning, TEXT("Line trace hit: %s"), *(ActorHit->GetName()));
 	}
+
+	return Hit;
 }
 
