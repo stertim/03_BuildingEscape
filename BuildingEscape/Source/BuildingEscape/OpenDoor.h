@@ -19,14 +19,12 @@ public:
 	void OpenDoor();
 	void CloseDoor();
 
-protected:
-	// Called when the game starts
-	virtual void BeginPlay() override;
-
-public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+protected:
+	// Called when the game starts
+	virtual void BeginPlay() override;
 
 private:
 	//UPROPERTY(VisibleAnywhere)
@@ -34,7 +32,7 @@ private:
 	float OpenAngle = -90.0f;
 
 	UPROPERTY(EditAnywhere)
-	ATriggerVolume* PressurePlate;
+	ATriggerVolume* PressurePlate = nullptr;
 
 	UPROPERTY(EditAnywhere)
 	float DoorCloseDelay = 1.0f;
@@ -42,7 +40,9 @@ private:
 	float LastDoorOpenTime = 0.0f;
 	FRotator DoorClosedRotation;
 	
-	AActor* Owner; // The owning door.
+	// The owning door.
+	AActor* Owner = nullptr;
 
+	// Returns total mass in kg
 	float GetTotalMassOfActorsOnPlate();
 };
